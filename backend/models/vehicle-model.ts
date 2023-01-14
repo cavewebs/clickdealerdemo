@@ -14,3 +14,4 @@ export interface IVehicle {
     createdAt: string;
     updatedAt: string;
 }
+export const VEHICLE_PK = 'Vehicle'

@@ -6,25 +6,20 @@ import { parsePayload } from "../../helpers/validators";
 import { apiResponse } from "../../helpers/api.response";
 import { HttpStatusCodes } from "../../libs/constants";
 import { Contracts } from "../../contracts/vehicle.contracts";
+import { BadRequestError, errorResponse } from "../../libs/errors";
 
 
 export class ListVehiclesUseCase {
     constructor(private vehicleRepo: VehicleRepository) { }
 
-    async execute(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    async execute(): Promise<APIGatewayProxyResult> {
 
-        const payload: Contracts.CreateVehicle = parsePayload(event.body);
-        const nowISO = new Date().toISOString();
-        const vehicle = await this.vehicleRepo.create({
-            ...payload,
-            type: "Vehicle",
-            id: uuid(),
-            status: Status.AVAILABLE,
-            createdAt: nowISO,
-            updatedAt: nowISO,
-        });
-
-        return apiResponse(HttpStatusCodes.Created, vehicle);
-
+        try {
+            const vehicles = await this.vehicleRepo.list();
+            return apiResponse(200, vehicles);
+        } catch (err: any) {
+            throw new BadRequestError(err,);
+        }
     }
+
 }
