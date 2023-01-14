@@ -17,12 +17,12 @@ export class ClickdealerDemoStack extends cdk.Stack {
     //Database
     new Dynamo(this);
 
-    api.addIntegration("POST", "/vehicle", vehicleLambda);
+    api.addIntegration("POST", "/vehicles", vehicleLambda);
     api.addIntegration("GET", "/health", health);
-    api.addIntegration("GET", "/vehicle", vehicleLambda);
-    api.addIntegration("GET", "/vehicle/{id}", vehicleLambda);
-    api.addIntegration("PATCH", "/vehicle/{id}", vehicleLambda);
-    api.addIntegration("DELETE", "/vehicle/{id}", vehicleLambda);
+    api.addIntegration("GET", "/vehicles", vehicleLambda);
+    api.addIntegration("GET", "/vehicles/{id}", vehicleLambda);
+    api.addIntegration("PATCH", "/vehicles/{id}", vehicleLambda);
+    api.addIntegration("DELETE", "/vehicles/{id}", vehicleLambda);
 
     // The code that defines your stack goes here
 

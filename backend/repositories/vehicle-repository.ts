@@ -1,11 +1,13 @@
 import { DeleteItemCommand, DeleteItemCommandInput, DeleteItemCommandOutput, DynamoDBClient, PutItemCommand, PutItemCommandInput, PutItemCommandOutput, QueryCommand, QueryCommandInput, QueryCommandOutput, UpdateItemCommand, UpdateItemCommandInput, UpdateItemCommandOutput } from "@aws-sdk/client-dynamodb";
-import { VEHICLE_PK } from "../models/vehicle-model";
+import { DocumentClient } from "aws-sdk/clients/dynamodb";
+import { fromDynamoItem } from "../helpers/api.response";
+import { IVehicle, VEHICLE_PK } from "../models/vehicle-model";
 
 export class VehicleRepository {
     private tableName = "vehicleData";
     private partitionKey = "type";
     private sortKey = "id";
-    constructor(protected dynamo: DynamoDBClient) { }
+    constructor(protected dynamo: DocumentClient) { }
 
 
     /**
@@ -13,19 +15,15 @@ export class VehicleRepository {
      *
      * @returns {Promise<Vehicle[]>} a list of vehicles
      */
-    async list(): Promise<QueryCommandOutput> {
-        const input: QueryCommandInput = {
+    async list(): Promise<any> {
+        const params = {
             TableName: this.tableName,
-            ExpressionAttributeNames: {
-                "#type": "type"
-            },
-            ExpressionAttributeValues: {
-                ":queryType": { S: VEHICLE_PK }
-            },
-            KeyConditionExpression: "#type = :queryType"
-        };
-        const command = new QueryCommand(input);
-        const response = await this.dynamo.send(command);
+            Key: {
+                type: VEHICLE_PK,
+            }
+        }
+        const response = await this.dynamo.get(params).promise();
+
         return response;
     }
 
@@ -35,20 +33,25 @@ export class VehicleRepository {
      * @param {CreateVehicleData} payload vehicle data required to create an Vehicle entity in the DynamoDB table
      * @returns {Promise<Vehicle>} the created Vehicle
      */
-    async create(payload: Record<string, any>): Promise<PutItemCommandOutput> {
+    async create(payload: Record<string, any>): Promise<any> {
         const putItem: any = {};
         for (const key in payload) {
             putItem[key] = {
                 S: payload[key]
             };
         }
+        const params = {
+            TableName: this.tableName,
+            Item: payload
+        };
 
         const input: PutItemCommandInput = {
             TableName: this.tableName,
             Item: putItem
         };
         const command = new PutItemCommand(input);
-        return await this.dynamo.send(command);
+        return await this.dynamo.put(params).promise();
+
     }
 
     async fetch(id: string): Promise<QueryCommandOutput> {
@@ -67,11 +70,10 @@ export class VehicleRepository {
         };
         const command = new QueryCommand(input);
         const response = await this.dynamo.send(command);
-
         return response;
     }
 
-    async updateTodo(payload: Record<string, any>, id: string): Promise<UpdateItemCommandOutput> {
+    async update(payload: Record<string, any>, id: string): Promise<UpdateItemCommandOutput> {
 
         const input: UpdateItemCommandInput = {
             TableName: this.tableName,
@@ -79,13 +81,16 @@ export class VehicleRepository {
                 [this.partitionKey]: { S: VEHICLE_PK },
                 [this.sortKey]: { S: id }
             },
-            UpdateExpression: "SET #status = :updatedStatus",
-            ExpressionAttributeNames: {
-                "#status": "status"
-            },
             ExpressionAttributeValues: {
-                ":updatedStatus": { S: payload.status }
-            }
+                ':make': payload.make,
+                ':model': payload.model,
+                ':regNo': payload.regNo,
+                ':regDate': payload.regDate,
+                ':status': payload.status,
+            },
+            UpdateExpression: 'SET make = :make, ' +
+                'model = :model, regNo = :regNo, regDate = :regDate, status = :status',
+            ReturnValues: 'UPDATED_NEW',
         };
         const command = new UpdateItemCommand(input);
         const response = await this.dynamo.send(command);

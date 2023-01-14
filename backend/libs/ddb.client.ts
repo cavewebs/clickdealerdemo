@@ -1,5 +1,5 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DocumentClient } from 'aws-sdk/clients/dynamodb';
 
 export const getDynamoDbClient = () => {
-    return new DynamoDBClient({ region: process.env.AWS_REGION });
+    return new DocumentClient({ region: process.env.AWS_REGION });
 }

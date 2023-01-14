@@ -20,7 +20,7 @@ export class VehicleRouter {
                 }
                 break;
 
-            case "/vehicles/{code}":
+            case "/vehicles/{id}":
                 if (httpMethod === HttpMethods.GET) {
                     response = await this.deps.fetchVehicleUseCase.execute(event);
                 } else if (httpMethod === HttpMethods.PATCH) {

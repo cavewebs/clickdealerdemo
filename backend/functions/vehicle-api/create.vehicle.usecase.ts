@@ -3,7 +3,7 @@ import { VehicleRepository } from "../../repositories/vehicle-repository";
 import { v4 as uuid } from "uuid";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { parsePayload } from "../../helpers/validators";
-import { apiResponse } from "../../helpers/api.response";
+import { apiResponse, fromDynamoItem } from "../../helpers/api.response";
 import { HttpStatusCodes } from "../../libs/constants";
 import { Contracts } from "../../contracts/vehicle.contracts";
 
@@ -23,8 +23,7 @@ export class CreateVehicleUseCase {
             createdAt: nowISO,
             updatedAt: nowISO,
         });
-
-        return apiResponse(HttpStatusCodes.Created, vehicle);
+        return apiResponse(HttpStatusCodes.Created, ['Created Successfully']);
 
     }
 }

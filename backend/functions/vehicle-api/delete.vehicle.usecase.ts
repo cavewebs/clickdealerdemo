@@ -24,7 +24,7 @@ export class DeleteVehicleUseCase {
             updatedAt: nowISO,
         });
 
-        return apiResponse(HttpStatusCodes.Created, vehicle);
+        return apiResponse(HttpStatusCodes.Created, {});
 
     }
 }
