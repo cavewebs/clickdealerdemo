@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
-import { ClickdealerDemoStack } from '../lib/clickdealer-demo-stack';
+import { ClickdealerDemoStack } from '../infrastructure/clickdealer-demo-stack';
 
 const app = new cdk.App();
 new ClickdealerDemoStack(app, 'ClickdealerDemoStack', {

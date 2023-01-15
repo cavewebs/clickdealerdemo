@@ -1,30 +1,29 @@
-import { DeleteItemCommand, DeleteItemCommandInput, DeleteItemCommandOutput, DynamoDBClient, PutItemCommand, PutItemCommandInput, PutItemCommandOutput, QueryCommand, QueryCommandInput, QueryCommandOutput, UpdateItemCommand, UpdateItemCommandInput, UpdateItemCommandOutput } from "@aws-sdk/client-dynamodb";
+import { DeleteItemOutput, PutItemOutput, QueryOutput, UpdateItemOutput } from "@aws-sdk/client-dynamodb";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
-import { fromDynamoItem } from "../helpers/api.response";
-import { IVehicle, VEHICLE_PK } from "../models/vehicle-model";
+import { VEHICLE_PK } from "../models/vehicle-model";
 
 export class VehicleRepository {
     private tableName = "vehicleData";
-    private partitionKey = "type";
-    private sortKey = "id";
     constructor(protected dynamo: DocumentClient) { }
 
 
     /**
      * Lists the vehicles available in the DynamoDB.
      *
-     * @returns {Promise<Vehicle[]>} a list of vehicles
      */
-    async list(): Promise<any> {
+    async list(): Promise<DocumentClient.ItemList> {
         const params = {
             TableName: this.tableName,
-            Key: {
-                type: VEHICLE_PK,
+            KeyConditionExpression: 'PK = :vType',
+            ExpressionAttributeValues: {
+                ':vType': VEHICLE_PK,
             }
         }
-        const response = await this.dynamo.get(params).promise();
-
-        return response;
+        const response = await this.dynamo.query(params).promise();
+        if (response.Items) {
+            return response.Items;
+        }
+        throw new Error('Unable to list all vehicles');
     }
 
     /**
@@ -33,83 +32,67 @@ export class VehicleRepository {
      * @param {CreateVehicleData} payload vehicle data required to create an Vehicle entity in the DynamoDB table
      * @returns {Promise<Vehicle>} the created Vehicle
      */
-    async create(payload: Record<string, any>): Promise<any> {
-        const putItem: any = {};
-        for (const key in payload) {
-            putItem[key] = {
-                S: payload[key]
-            };
-        }
+    async create(payload: Record<string, any>): Promise<PutItemOutput> {
         const params = {
             TableName: this.tableName,
             Item: payload
         };
 
-        const input: PutItemCommandInput = {
-            TableName: this.tableName,
-            Item: putItem
-        };
-        const command = new PutItemCommand(input);
         return await this.dynamo.put(params).promise();
 
     }
 
-    async fetch(id: string): Promise<QueryCommandOutput> {
-
-        const input: QueryCommandInput = {
-            TableName: this.tableName,
-            ExpressionAttributeNames: {
-                "#type": "type",
-                "#id": "id"
-            },
-            ExpressionAttributeValues: {
-                ":queryType": { S: VEHICLE_PK },
-                ":queryId": { S: id }
-            },
-            KeyConditionExpression: "#type = :queryType AND #id = :queryId"
-        };
-        const command = new QueryCommand(input);
-        const response = await this.dynamo.send(command);
-        return response;
-    }
-
-    async update(payload: Record<string, any>, id: string): Promise<UpdateItemCommandOutput> {
-
-        const input: UpdateItemCommandInput = {
+    async fetch(id: string): Promise<DocumentClient.GetItemOutput> {
+        const params = {
             TableName: this.tableName,
             Key: {
-                [this.partitionKey]: { S: VEHICLE_PK },
-                [this.sortKey]: { S: id }
+                ["PK"]: VEHICLE_PK,
+                ["id"]: id
+            }
+        }
+
+        return await this.dynamo.get(params).promise();
+    }
+
+    async update(payload: Record<string, any>, id: string): Promise<UpdateItemOutput | null> {
+        const exists = await this.fetch(id);
+        if (!exists.Item) {
+            return null;
+        }
+        const params: any = {
+            TableName: this.tableName,
+            Key: {
+                ["PK"]: VEHICLE_PK,
+                ["id"]: id,
             },
             ExpressionAttributeValues: {
                 ':make': payload.make,
                 ':model': payload.model,
                 ':regNo': payload.regNo,
-                ':regDate': payload.regDate,
-                ':status': payload.status,
+                ':regDate': payload.regDate
             },
             UpdateExpression: 'SET make = :make, ' +
-                'model = :model, regNo = :regNo, regDate = :regDate, status = :status',
+                'model = :model, regNo = :regNo, regDate = :regDate',
             ReturnValues: 'UPDATED_NEW',
-        };
-        const command = new UpdateItemCommand(input);
-        const response = await this.dynamo.send(command);
-        return response;
+        }
+        return await this.dynamo.update(params).promise();
     }
 
-    async deleteTodo(id: string): Promise<DeleteItemCommandOutput> {
-
-        const input: DeleteItemCommandInput = {
+    async delete(id: string): Promise<DeleteItemOutput | null> {
+        const exists = await this.fetch(id);
+        if (!exists.Item) {
+            return null;
+        }
+        const params = {
             TableName: this.tableName,
             Key: {
-                [this.partitionKey]: { S: VEHICLE_PK },
-                [this.sortKey]: { S: id }
+                id,
+                PK: VEHICLE_PK
             }
-        };
-        const command = new DeleteItemCommand(input);
-        const response = await this.dynamo.send(command);
+        }
 
-        return response;
+        return await this.dynamo.delete(params).promise();
+
     }
 
 }

@@ -1,5 +1,4 @@
 import { APIGatewayProxyResult } from "aws-lambda";
-import { unmarshall } from "@aws-sdk/util-dynamodb";
 
 export const apiResponse = (status: number, body: Record<string, any>): APIGatewayProxyResult => {
     return {
@@ -16,7 +15,3 @@ export const apiResponse = (status: number, body: Record<string, any>): APIGatew
     };
 };
 
-export const fromDynamoItem = (item: any) => {
-
-    return unmarshall(item);
-}

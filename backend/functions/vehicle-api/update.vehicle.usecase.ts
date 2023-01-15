@@ -1,12 +1,11 @@
 import { Status } from "../../models/vehicle-model";
 import { VehicleRepository } from "../../repositories/vehicle-repository";
-import { v4 as uuid } from "uuid";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { parsePayload } from "../../helpers/validators";
-import { apiResponse, fromDynamoItem } from "../../helpers/api.response";
+import { apiResponse } from "../../helpers/api.response";
 import { HttpStatusCodes } from "../../libs/constants";
+import { handleErrors } from "../../libs/errors";
 import { Contracts } from "../../contracts/vehicle.contracts";
-import { BadRequestError } from "../../libs/errors";
+import { parsePayload } from "../../helpers/validators";
 
 
 export class UpdateVehicleUseCase {
@@ -14,19 +13,21 @@ export class UpdateVehicleUseCase {
 
     async execute(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
         const { body } = event;
-        if (body === null) throw new BadRequestError("Missing request body");
-        const payload = JSON.parse(body);
+        if (!body || body === null) return apiResponse(HttpStatusCodes.BadRequest, { msg: "Missing request body" });
+        const payload: Contracts.UpdateVehicle = parsePayload(event.body);
         const id = event.pathParameters?.id;
-        if (!id) throw new BadRequestError("'id' must be provided as a URL path parameter");
-        const nowISO = new Date().toISOString();
-        const vehicle = await this.vehicleRepo.update({
-            ...payload,
-            updatedAt: nowISO,
-        }, id);
-        const response = fromDynamoItem(vehicle)
+        if (!id) return apiResponse(HttpStatusCodes.BadRequest, { msg: "'id' must be provided as a URL path parameter" });
+        try {
+            const vehicle = await this.vehicleRepo.update({
+                ...payload,
+            }, id);
+            if (vehicle === null) {
+                return apiResponse(HttpStatusCodes.NotFound, { msg: `Vehicle with ID ${id} does not exist` });
+            }
+            return apiResponse(HttpStatusCodes.OK, vehicle);
+        } catch (err: any) {
+            return handleErrors(err);
 
-
-        return apiResponse(HttpStatusCodes.Created, response);
-
+        }
     }
 }

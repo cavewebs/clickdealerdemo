@@ -1,12 +1,8 @@
-import { Status } from "../../models/vehicle-model";
 import { VehicleRepository } from "../../repositories/vehicle-repository";
-import { v4 as uuid } from "uuid";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { parsePayload } from "../../helpers/validators";
-import { apiResponse, fromDynamoItem } from "../../helpers/api.response";
+import { apiResponse, } from "../../helpers/api.response";
 import { HttpStatusCodes } from "../../libs/constants";
-import { Contracts } from "../../contracts/vehicle.contracts";
-import { BadRequestError } from "../../libs/errors";
+import { handleErrors, } from "../../libs/errors";
 
 
 export class FetchVehicleUseCase {
@@ -14,11 +10,17 @@ export class FetchVehicleUseCase {
 
     async execute(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
         const id = event.pathParameters?.id;
-        if (!id) throw new BadRequestError("'id' must be provided as a URL path parameter");
-        const vehicle = await this.vehicleRepo.fetch(id);
-        console.log("response in FetchVehicleUseCase", vehicle);
-        const response = fromDynamoItem(vehicle.Items)
-        return apiResponse(HttpStatusCodes.Created, response);
+        if (!id) return apiResponse(HttpStatusCodes.BadRequest, { msg: "'id' must be provided as a URL path parameter" });
+        try {
+            const vehicle = await this.vehicleRepo.fetch(id);
+            if (!vehicle.Item) {
+                return apiResponse(HttpStatusCodes.NotFound, { msg: "No Vehicle Found with ID " + id })
+            }
+            return apiResponse(HttpStatusCodes.OK, vehicle)
+        } catch (err: any) {
+
+            return handleErrors(err);
+        }
 
     }
 }

@@ -13,16 +13,17 @@ export class ClickdealerDemoStack extends cdk.Stack {
 
     //Lambdas setup
     const vehicleLambda = new Lambda(this, "vehicle-api");
-    const health = new Lambda(this, "health");
     //Database
-    new Dynamo(this);
+    const ddb = new Dynamo(this);
+    ddb.grantReadWriteData(vehicleLambda);
 
     api.addIntegration("POST", "/vehicles", vehicleLambda);
-    api.addIntegration("GET", "/health", health);
     api.addIntegration("GET", "/vehicles", vehicleLambda);
     api.addIntegration("GET", "/vehicles/{id}", vehicleLambda);
     api.addIntegration("PATCH", "/vehicles/{id}", vehicleLambda);
     api.addIntegration("DELETE", "/vehicles/{id}", vehicleLambda);
+
+
 
     // The code that defines your stack goes here
 

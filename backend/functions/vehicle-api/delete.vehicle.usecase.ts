@@ -5,26 +5,18 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { parsePayload } from "../../helpers/validators";
 import { apiResponse } from "../../helpers/api.response";
 import { HttpStatusCodes } from "../../libs/constants";
-import { Contracts } from "../../contracts/vehicle.contracts";
-
 
 export class DeleteVehicleUseCase {
     constructor(private vehicleRepo: VehicleRepository) { }
 
     async execute(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-
-        const payload: Contracts.CreateVehicle = parsePayload(event.body);
-        const nowISO = new Date().toISOString();
-        const vehicle = await this.vehicleRepo.create({
-            ...payload,
-            type: "Vehicle",
-            id: uuid(),
-            status: Status.AVAILABLE,
-            createdAt: nowISO,
-            updatedAt: nowISO,
-        });
-
-        return apiResponse(HttpStatusCodes.Created, {});
+        const id = event.pathParameters?.id;
+        if (!id) return apiResponse(HttpStatusCodes.BadRequest, { msg: "'id' must be provided as a URL path parameter" });
+        const resp = await this.vehicleRepo.delete(id);
+        if (resp === null) {
+            return apiResponse(HttpStatusCodes.NotFound, { msg: `Vehicle with ID ${id} does not exist` });
+        }
+        return apiResponse(HttpStatusCodes.OK, { msg: "Successfully deleted the vehicle record with ID " + id });
 
     }
 }

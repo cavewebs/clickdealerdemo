@@ -11,7 +11,6 @@ export class Lambda extends NodejsFunction {
             architecture: Architecture.ARM_64,
             runtime: Runtime.NODEJS_14_X,
             entry: path.join(__dirname, `../backend/functions/${fileName}/index.ts`),
-            // handler: path.join(__dirname, `../backend/functions/${fileName}/index`),
             logRetention: RetentionDays.ONE_WEEK
         });
 

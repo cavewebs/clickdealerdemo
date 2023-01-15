@@ -6,7 +6,7 @@ import { parsePayload } from "../../helpers/validators";
 import { apiResponse, fromDynamoItem } from "../../helpers/api.response";
 import { HttpStatusCodes } from "../../libs/constants";
 import { Contracts } from "../../contracts/vehicle.contracts";
-import { BadRequestError, errorResponse } from "../../libs/errors";
+import { BadRequestError, errorResponse, handleErrors } from "../../libs/errors";
 
 export interface VehicleResponse {
     id: string;
@@ -22,15 +22,11 @@ export class ListVehiclesUseCase {
     constructor(private vehicleRepo: VehicleRepository) { }
 
     async execute(): Promise<APIGatewayProxyResult> {
-        let response: VehicleResponse[] = [];
         try {
             const vehicles = await this.vehicleRepo.list();
-            if (vehicles.Count && vehicles.Count > 0) {
-                vehicles.Items?.map((items) => response.push(<VehicleResponse>fromDynamoItem(items)))
-            }
-            return apiResponse(200, response);
+            return apiResponse(200, vehicles);
         } catch (err: any) {
-            throw new BadRequestError(err,);
+            return handleErrors(err);
         }
     }
 

@@ -84,57 +84,19 @@ export class BadRequestError extends Error implements APIError {
     }
 }
 
-export type ValidationError = { name: string; reason: string };
 
-/**
- * Raise this API error when the request body fails the schema validation. Results in the <code>HTTP 400 Bad Request</code>
- */
-export class InvalidRequestBodyError extends Error implements APIError {
-    validationErrors: ValidationError[];
-
-    constructor(errors: ValidationError[]) {
-        super("Your request body failed validation.");
-        this.name = "invalid_request";
-        this.validationErrors = errors;
+export const handleErrors = (err: Error): APIGatewayProxyResult => {
+    console.log("Exception", err);
+    let errorMessage = "";
+    if (err instanceof Error) {
+        errorMessage = err.message;
+    } else {
+        errorMessage = JSON.stringify(err);
     }
+    const result: APIGatewayProxyResult = {
+        statusCode: HttpStatusCodes.InternalServerError,
+        body: `Internal server error: ${errorMessage}`
+    };
 
-    response(requestId: string): APIGatewayProxyResult {
-        return errorResponse(requestId, HttpStatusCodes.BadRequest, "validation-error", this.message, { errors: this.validationErrors });
-    }
-}
-
-export class ConflictError extends Error implements APIError {
-    detail: string;
-
-    constructor(message: string, detail: string) {
-        super(message);
-        this.name = "conflict";
-        this.detail = detail;
-    }
-
-    response(requestId: string): APIGatewayProxyResult {
-        return errorResponse(requestId, HttpStatusCodes.Conflict, "conflict", this.message, { detail: this.detail });
-    }
-}
-
-export function internalServerErrorResponse(requestId: string): APIGatewayProxyResult {
-    return errorResponse(
-        requestId,
-        HttpStatusCodes.InternalServerError,
-        "internal-server-error",
-        "An unexpected error has occurred.",
-        {
-            detail: `For assistance please contact ClickDealer support and quote request id ${requestId}.`,
-        },
-    );
-}
-
-/**
- * Returns true if the given error is an APIError, false otherwise.
- *
- * @param err
- */
-export function isAPIError(err: unknown): err is APIError {
-    const apiInterface = err as APIError;
-    return apiInterface.response !== undefined;
-}
+    return result;
+};
